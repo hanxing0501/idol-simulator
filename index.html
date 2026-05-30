@@ -1,0 +1,1809 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#f2f2f7">
+    <title>偶像模拟器 · Idol Simulator</title>
+    <style>
+        :root {
+            --ios-blue: #007AFF;
+            --ios-red: #FF3B30;
+            --ios-pink: #FF2D55;
+            --ios-purple: #AF52DE;
+            --ios-bg: #f2f2f7;
+            --ios-card: #ffffff;
+            --ios-text: #1c1c1e;
+            --ios-text-secondary: #8e8e93;
+            --ios-separator: #e5e5ea;
+            --ios-green: #34C759;
+            --ios-orange: #FF9500;
+            --safe-bottom: env(safe-area-inset-bottom, 20px);
+            --tab-height: 50px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', 'PingFang SC', sans-serif;
+            background: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* iPhone 模拟外壳 - 桌面端 */
+        .phone-frame {
+            width: 390px;
+            height: 844px;
+            background: #000;
+            border-radius: 44px;
+            padding: 14px;
+            box-shadow:
+                0 0 0 3px #1a1a1a,
+                0 0 0 6px #2d2d2d,
+                0 0 0 8px #1a1a1a,
+                0 20px 60px rgba(0, 0, 0, 0.6),
+                inset 0 0 2px rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+        .phone-frame::before {
+            content: '';
+            position: absolute;
+            top: 22px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 30px;
+            background: #000;
+            border-radius: 20px;
+            z-index: 100;
+        }
+        .phone-screen {
+            width: 100%;
+            height: 100%;
+            background: var(--ios-bg);
+            border-radius: 32px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* 移动端全屏 */
+        @media (max-width: 430px) {
+            body {
+                background: var(--ios-bg);
+                align-items: flex-start;
+            }
+            .phone-frame {
+                width: 100%;
+                height: 100vh;
+                height: 100dvh;
+                border-radius: 0;
+                padding: 0;
+                box-shadow: none;
+            }
+            .phone-frame::before {
+                display: none;
+            }
+            .phone-screen {
+                border-radius: 0;
+            }
+        }
+
+        /* 状态栏 */
+        .status-bar {
+            height: 48px;
+            background: #f2f2f7;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 0 24px 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #1c1c1e;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+        .status-bar .time {
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .status-icons {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            font-size: 11px;
+        }
+        .status-icons .battery {
+            width: 25px;
+            height: 11px;
+            border: 1.5px solid #1c1c1e;
+            border-radius: 3px;
+            padding: 1.5px;
+            display: flex;
+            align-items: center;
+        }
+        .status-icons .battery-fill {
+            width: 75%;
+            height: 100%;
+            background: #1c1c1e;
+            border-radius: 1px;
+        }
+
+        /* 导航栏 */
+        .nav-bar {
+            height: 44px;
+            background: #f2f2f7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 16px;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 9;
+        }
+        .nav-bar .title {
+            font-size: 17px;
+            font-weight: 600;
+            color: #1c1c1e;
+            letter-spacing: -0.2px;
+        }
+        .nav-bar .nav-btn {
+            position: absolute;
+            right: 16px;
+            font-size: 15px;
+            color: var(--ios-blue);
+            font-weight: 500;
+            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: 8px;
+            transition: background 0.2s;
+            background: none;
+            border: none;
+            font-family: inherit;
+        }
+        .nav-bar .nav-btn:active {
+            background: rgba(0, 0, 0, 0.06);
+        }
+        .nav-bar .nav-btn-left {
+            right: auto;
+            left: 8px;
+        }
+
+        /* 主内容区 */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 8px;
+            scroll-behavior: smooth;
+        }
+        .main-content::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* 底部标签栏 */
+        .tab-bar {
+            height: calc(var(--tab-height) + var(--safe-bottom));
+            padding-bottom: var(--safe-bottom);
+            background: #f8f8f8;
+            border-top: 0.5px solid var(--ios-separator);
+            display: flex;
+            flex-shrink: 0;
+            z-index: 10;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .tab-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            cursor: pointer;
+            color: #8e8e93;
+            transition: color 0.2s;
+            position: relative;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.1px;
+        }
+        .tab-item.active {
+            color: var(--ios-blue);
+        }
+        .tab-item .tab-icon {
+            font-size: 22px;
+            line-height: 1;
+            transition: transform 0.2s;
+        }
+        .tab-item:active .tab-icon {
+            transform: scale(0.88);
+        }
+        .tab-badge {
+            position: absolute;
+            top: 0px;
+            right: 50%;
+            transform: translateX(22px);
+            width: 18px;
+            height: 18px;
+            background: var(--ios-red);
+            color: #fff;
+            border-radius: 50%;
+            font-size: 10px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            letter-spacing: 0;
+        }
+
+        /* 卡片 */
+        .card {
+            background: var(--ios-card);
+            border-radius: 14px;
+            margin: 10px 16px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            transition: transform 0.15s;
+        }
+        .card:active {
+            transform: scale(0.985);
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .card-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--ios-text);
+        }
+        .card-subtitle {
+            font-size: 12px;
+            color: var(--ios-text-secondary);
+            margin-top: 1px;
+        }
+
+        /* 消息气泡 */
+        .bubble-row {
+            display: flex;
+            gap: 10px;
+            padding: 8px 16px;
+            align-items: flex-start;
+            cursor: pointer;
+            transition: background 0.15s;
+            border-radius: 10px;
+            margin: 2px 8px;
+        }
+        .bubble-row:active {
+            background: rgba(0, 0, 0, 0.03);
+        }
+        .bubble-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 17px;
+            color: #fff;
+            font-weight: 600;
+        }
+        .bubble-content {
+            flex: 1;
+            min-width: 0;
+        }
+        .bubble-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--ios-text);
+        }
+        .bubble-preview {
+            font-size: 13px;
+            color: var(--ios-text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 2px;
+        }
+        .bubble-time {
+            font-size: 11px;
+            color: #c7c7cc;
+            flex-shrink: 0;
+        }
+        .unread-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--ios-blue);
+            border-radius: 50%;
+            flex-shrink: 0;
+            align-self: center;
+            margin-left: 6px;
+        }
+
+        /* 动态卡片 */
+        .post-card {
+            background: var(--ios-card);
+            border-radius: 14px;
+            margin: 10px 16px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+        .post-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .post-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #fff;
+            font-weight: 700;
+        }
+        .post-name {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--ios-text);
+        }
+        .post-time {
+            font-size: 11px;
+            color: #c7c7cc;
+        }
+        .post-body {
+            font-size: 14px;
+            color: var(--ios-text);
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+        .post-actions {
+            display: flex;
+            gap: 20px;
+            font-size: 12px;
+            color: var(--ios-text-secondary);
+            padding-top: 6px;
+            border-top: 0.5px solid var(--ios-separator);
+        }
+        .post-actions span {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: color 0.2s;
+        }
+        .post-actions span:active {
+            color: var(--ios-blue);
+        }
+        .comment-preview {
+            font-size: 12px;
+            color: var(--ios-text-secondary);
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 8px 10px;
+            margin-top: 8px;
+        }
+
+        /* 应援语卡片 */
+        .cheer-card {
+            background: linear-gradient(135deg, #fff5f7 0%, #fef3ff 50%, #f5f0ff 100%);
+            border-radius: 14px;
+            margin: 8px 16px;
+            padding: 14px 16px;
+            border: 1px solid rgba(175, 82, 222, 0.12);
+            position: relative;
+            overflow: hidden;
+        }
+        .cheer-card::before {
+            content: '💫';
+            position: absolute;
+            right: 14px;
+            top: 10px;
+            font-size: 28px;
+            opacity: 0.5;
+        }
+        .cheer-fan-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--ios-purple);
+            margin-bottom: 4px;
+        }
+        .cheer-text {
+            font-size: 14px;
+            color: #3a3a3c;
+            line-height: 1.4;
+            font-style: italic;
+        }
+        .cheer-time {
+            font-size: 10px;
+            color: #b0b0b8;
+            margin-top: 6px;
+        }
+
+        /* 创建偶像表单 */
+        .form-section {
+            padding: 8px 16px;
+        }
+        .form-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--ios-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+            margin-top: 12px;
+            display: block;
+        }
+        .form-input,
+        .form-textarea,
+        .form-select {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1.5px solid #e0e0e5;
+            border-radius: 10px;
+            font-size: 15px;
+            font-family: inherit;
+            background: #fff;
+            color: var(--ios-text);
+            transition: border-color 0.2s;
+            -webkit-appearance: none;
+            appearance: none;
+            outline: none;
+        }
+        .form-input:focus,
+        .form-textarea:focus,
+        .form-select:focus {
+            border-color: var(--ios-blue);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        }
+        .form-textarea {
+            resize: vertical;
+            min-height: 70px;
+            line-height: 1.5;
+        }
+        .form-select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238e8e93' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 36px;
+            cursor: pointer;
+        }
+        .btn-primary {
+            display: block;
+            width: calc(100% - 32px);
+            margin: 20px 16px;
+            padding: 14px;
+            background: var(--ios-blue);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            letter-spacing: 0.3px;
+            transition: opacity 0.2s;
+        }
+        .btn-primary:active {
+            opacity: 0.75;
+        }
+        .btn-outline {
+            display: block;
+            width: calc(100% - 32px);
+            margin: 8px 16px;
+            padding: 13px;
+            background: #fff;
+            color: var(--ios-blue);
+            border: 1.5px solid var(--ios-blue);
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        .btn-outline:active {
+            background: rgba(0, 122, 255, 0.06);
+        }
+
+        /* 统计标签 */
+        .stat-row {
+            display: flex;
+            gap: 8px;
+            padding: 4px 16px;
+            flex-wrap: wrap;
+        }
+        .stat-chip {
+            background: #fff;
+            border-radius: 20px;
+            padding: 8px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--ios-text);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .stat-chip .chip-emoji {
+            font-size: 15px;
+        }
+        .stat-value {
+            color: var(--ios-blue);
+            font-weight: 700;
+        }
+
+        /* 模态弹窗 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.45);
+            z-index: 200;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            animation: fadeIn 0.25s;
+        }
+        .modal-sheet {
+            background: #fff;
+            border-radius: 20px 20px 0 0;
+            width: 100%;
+            max-width: 390px;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 8px 0 28px;
+            animation: slideUp 0.3s cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+        .modal-handle {
+            width: 36px;
+            height: 5px;
+            background: #d1d1d6;
+            border-radius: 3px;
+            margin: 8px auto 12px;
+        }
+        .modal-title {
+            font-size: 17px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 8px;
+            color: var(--ios-text);
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+        @keyframes popIn {
+            0% {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            70% {
+                transform: scale(1.04);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        .pop-in {
+            animation: popIn 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+
+        /* 消息详情弹窗 */
+        .msg-detail {
+            padding: 16px 20px;
+            line-height: 1.6;
+            font-size: 15px;
+            color: var(--ios-text);
+        }
+        .msg-detail .msg-sender {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 6px;
+        }
+        .msg-detail .msg-timestamp {
+            font-size: 12px;
+            color: #c7c7cc;
+            margin-bottom: 10px;
+        }
+        .msg-detail .msg-body {
+            background: #f5f5f7;
+            border-radius: 12px;
+            padding: 14px;
+            line-height: 1.6;
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #c7c7cc;
+        }
+        .empty-state .empty-emoji {
+            font-size: 56px;
+            margin-bottom: 12px;
+        }
+        .empty-state p {
+            font-size: 14px;
+            color: #8e8e93;
+        }
+
+        /* 标签 */
+        .tag {
+            display: inline-block;
+            background: #f0f0f5;
+            border-radius: 6px;
+            padding: 3px 8px;
+            font-size: 11px;
+            font-weight: 500;
+            color: #636366;
+            margin: 2px;
+        }
+        .tag.purple {
+            background: #f3e8ff;
+            color: #7c3aed;
+        }
+        .tag.pink {
+            background: #ffe8f0;
+            color: #e11d48;
+        }
+        .tag.blue {
+            background: #e8f2ff;
+            color: #2563eb;
+        }
+        .tag.orange {
+            background: #fff4e8;
+            color: #ea580c;
+        }
+
+        /* 脉冲动画 - 新消息提示 */
+        @keyframes pulse {
+            0%,
+            100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.15);
+            }
+        }
+        .pulse {
+            animation: pulse 0.6s ease-in-out 3;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1c1c1e;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            z-index: 300;
+            pointer-events: none;
+            animation: toastIn 0.4s ease-out, toastOut 0.3s 1.6s ease-in forwards;
+            letter-spacing: 0.2px;
+        }
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+        @keyframes toastOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-16px);
+            }
+        }
+
+        /* 隐藏页面 */
+        .page {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+        }
+        .page.active {
+            display: flex;
+        }
+        .page-content {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .page-content::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* 创建页面的特殊样式 */
+        #createPage .page-content {
+            padding-bottom: 30px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="phone-frame">
+        <div class="phone-screen" id="phoneScreen">
+            <!-- 状态栏 -->
+            <div class="status-bar">
+                <span class="time" id="statusTime">9:41</span>
+                <div class="status-icons">
+                    <span>5G</span>
+                    <div class="battery"><div class="battery-fill"></div></div>
+                </div>
+            </div>
+
+            <!-- ========== 创建偶像页面 ========== -->
+            <div class="page active" id="createPage">
+                <div class="nav-bar">
+                    <span class="title">✨ 创建你的偶像</span>
+                </div>
+                <div class="page-content" id="createScroll">
+                    <div class="form-section">
+                        <label class="form-label">🌟 真实姓名</label>
+                        <input class="form-input" id="inputRealName" placeholder="例如：林星辰" maxlength="20">
+
+                        <label class="form-label">💫 艺名 / 舞台名</label>
+                        <input class="form-input" id="inputStageName" placeholder="例如：Stella" maxlength="20">
+
+                        <label class="form-label">🎂 年龄</label>
+                        <input class="form-input" id="inputAge" type="number" placeholder="例如：20" min="14" max="40" value="20">
+
+                        <label class="form-label">👤 性别</label>
+                        <select class="form-select" id="inputGender">
+                            <option value="女">女</option>
+                            <option value="男">男</option>
+                            <option value="非二元">非二元</option>
+                        </select>
+
+                        <label class="form-label">🎤 偶像类型</label>
+                        <select class="form-select" id="inputType">
+                            <option value="Solo歌手">Solo歌手</option>
+                            <option value="偶像团体成员">偶像团体成员</option>
+                            <option value="演员">演员</option>
+                            <option value="模特">模特</option>
+                            <option value="全能艺人">全能艺人</option>
+                            <option value="创作歌手">创作歌手</option>
+                        </select>
+
+                        <label class="form-label">🎨 风格标签（可多选）</label>
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;" id="styleTags">
+                            <span class="tag pink selectable" data-val="可爱">可爱</span>
+                            <span class="tag blue selectable" data-val="酷炫">酷炫</span>
+                            <span class="tag purple selectable" data-val="优雅">优雅</span>
+                            <span class="tag orange selectable" data-val="元气">元气</span>
+                            <span class="tag selectable" data-val="清纯">清纯</span>
+                            <span class="tag pink selectable" data-val="性感">性感</span>
+                            <span class="tag blue selectable" data-val="复古">复古</span>
+                            <span class="tag purple selectable" data-val="梦幻">梦幻</span>
+                            <span class="tag orange selectable" data-val="阳光">阳光</span>
+                            <span class="tag selectable" data-val="高冷">高冷</span>
+                        </div>
+                        <input type="hidden" id="inputStyle" value="">
+
+                        <label class="form-label">💎 特长</label>
+                        <input class="form-input" id="inputTalent" placeholder="例如：唱歌、跳舞、钢琴、作曲" maxlength="60">
+
+                        <label class="form-label">💜 粉丝名</label>
+                        <input class="form-input" id="inputFanName" placeholder="例如：星光、小星星" maxlength="15">
+
+                        <label class="form-label">🎨 代表色</label>
+                        <input class="form-input" id="inputColor" type="color" value="#AF52DE" style="height:44px;padding:4px;cursor:pointer;">
+
+                        <label class="form-label">📅 出道日期</label>
+                        <input class="form-input" id="inputDebutDate" type="date" value="2024-01-01">
+
+                        <label class="form-label">📝 背景故事</label>
+                        <textarea class="form-textarea" id="inputBackstory" placeholder="描述偶像的成长经历、出道契机、梦想与目标……&#10;例如：从小热爱舞台，15岁开始练习生生涯，经过5年努力终于出道……" maxlength="300"></textarea>
+
+                        <label class="form-label">👁️ 外貌描述</label>
+                        <textarea class="form-textarea" id="inputAppearance" placeholder="描述偶像的外貌特征……&#10;例如：一头柔顺的长发，眼眸如星辰般明亮，笑容温暖治愈……" maxlength="200"></textarea>
+
+                        <label class="form-label">❤️ 性格描述</label>
+                        <textarea class="form-textarea" id="inputPersonality" placeholder="描述偶像的性格特点……&#10;例如：温柔善良，对待粉丝真诚热情，舞台上充满自信与魅力……" maxlength="200"></textarea>
+                    </div>
+                    <button class="btn-primary" id="btnCreateIdol" style="margin-top:8px;">✨ 创建偶像，开启星途</button>
+                    <button class="btn-outline" id="btnLoadIdol" style="display:none;">📂 加载已保存的偶像</button>
+                    <div style="height:30px;"></div>
+                </div>
+            </div>
+
+            <!-- ========== 主页面（仪表盘） ========== -->
+            <div class="page" id="homePage">
+                <div class="nav-bar">
+                    <span class="title">🏠 偶像主页</span>
+                    <button class="nav-btn" id="btnEditIdol">编辑</button>
+                </div>
+                <div class="page-content" id="homeScroll">
+                    <!-- 偶像信息卡片 -->
+                    <div class="card" id="idolCard">
+                        <div style="display:flex;align-items:center;gap:14px;">
+                            <div class="card-avatar" id="idolAvatarHome" style="width:56px;height:56px;font-size:26px;">⭐</div>
+                            <div>
+                                <div style="font-size:18px;font-weight:700;color:var(--ios-text);" id="idolStageNameHome">Stella</div>
+                                <div style="font-size:12px;color:var(--ios-text-secondary);" id="idolRealNameHome">林星辰</div>
+                                <div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:3px;" id="idolTagsHome"></div>
+                            </div>
+                        </div>
+                        <div style="margin-top:12px;font-size:12px;color:var(--ios-text-secondary);line-height:1.5;" id="idolBioHome"></div>
+                    </div>
+
+                    <!-- 统计数据 -->
+                    <div class="stat-row" id="statRow">
+                        <div class="stat-chip"><span class="chip-emoji">👥</span> 粉丝 <span class="stat-value" id="statFans">12.8K</span></div>
+                        <div class="stat-chip"><span class="chip-emoji">🔥</span> 热度 <span class="stat-value" id="statHeat">8.5K</span></div>
+                        <div class="stat-chip"><span class="chip-emoji">📝</span> 动态 <span class="stat-value" id="statPosts">0</span></div>
+                        <div class="stat-chip"><span class="chip-emoji">💬</span> 消息 <span class="stat-value" id="statMsgs">0</span></div>
+                    </div>
+
+                    <!-- 最新动态预览 -->
+                    <div style="padding:6px 16px;font-size:13px;font-weight:600;color:var(--ios-text-secondary);text-transform:uppercase;letter-spacing:0.5px;">📌 最新动态</div>
+                    <div id="latestPostPreview" style="min-height:40px;"></div>
+
+                    <!-- 最新应援预览 -->
+                    <div style="padding:6px 16px;font-size:13px;font-weight:600;color:var(--ios-text-secondary);text-transform:uppercase;letter-spacing:0.5px;">💜 最新应援</div>
+                    <div id="latestCheerPreview" style="min-height:40px;"></div>
+                    <div style="height:20px;"></div>
+                </div>
+                <div class="tab-bar">
+                    <div class="tab-item active" data-page="homePage">
+                        <span class="tab-icon">🏠</span> 主页
+                    </div>
+                    <div class="tab-item" data-page="messagesPage" id="tabMessages">
+                        <span class="tab-icon">💬</span> 消息
+                        <span class="tab-badge" id="msgBadge" style="display:none;">0</span>
+                    </div>
+                    <div class="tab-item" data-page="postsPage">
+                        <span class="tab-icon">📝</span> 动态
+                    </div>
+                    <div class="tab-item" data-page="cheersPage">
+                        <span class="tab-icon">💜</span> 应援
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== 消息页面 ========== -->
+            <div class="page" id="messagesPage">
+                <div class="nav-bar">
+                    <span class="title">💬 消息</span>
+                    <button class="nav-btn" id="btnMarkAllRead">全部已读</button>
+                </div>
+                <div class="page-content" id="messagesScroll">
+                    <div id="messagesList"></div>
+                    <div class="empty-state" id="messagesEmpty">
+                        <div class="empty-emoji">📭</div>
+                        <p>暂无消息</p>
+                    </div>
+                    <div style="height:16px;"></div>
+                </div>
+                <div class="tab-bar">
+                    <div class="tab-item" data-page="homePage">
+                        <span class="tab-icon">🏠</span> 主页
+                    </div>
+                    <div class="tab-item active" data-page="messagesPage" id="tabMessages2">
+                        <span class="tab-icon">💬</span> 消息
+                        <span class="tab-badge" id="msgBadge2" style="display:none;">0</span>
+                    </div>
+                    <div class="tab-item" data-page="postsPage">
+                        <span class="tab-icon">📝</span> 动态
+                    </div>
+                    <div class="tab-item" data-page="cheersPage">
+                        <span class="tab-icon">💜</span> 应援
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== 动态页面 ========== -->
+            <div class="page" id="postsPage">
+                <div class="nav-bar">
+                    <span class="title">📝 动态</span>
+                    <button class="nav-btn" id="btnNewPost">发布</button>
+                </div>
+                <div class="page-content" id="postsScroll">
+                    <div id="postsList"></div>
+                    <div class="empty-state" id="postsEmpty">
+                        <div class="empty-emoji">📝</div>
+                        <p>还没有发布动态</p>
+                        <p style="font-size:12px;">点击右上角发布第一条动态吧</p>
+                    </div>
+                    <div style="height:16px;"></div>
+                </div>
+                <div class="tab-bar">
+                    <div class="tab-item" data-page="homePage">
+                        <span class="tab-icon">🏠</span> 主页
+                    </div>
+                    <div class="tab-item" data-page="messagesPage" id="tabMessages3">
+                        <span class="tab-icon">💬</span> 消息
+                        <span class="tab-badge" id="msgBadge3" style="display:none;">0</span>
+                    </div>
+                    <div class="tab-item active" data-page="postsPage">
+                        <span class="tab-icon">📝</span> 动态
+                    </div>
+                    <div class="tab-item" data-page="cheersPage">
+                        <span class="tab-icon">💜</span> 应援
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== 应援页面 ========== -->
+            <div class="page" id="cheersPage">
+                <div class="nav-bar">
+                    <span class="title">💜 应援墙</span>
+                </div>
+                <div class="page-content" id="cheersScroll">
+                    <div id="cheersList"></div>
+                    <div class="empty-state" id="cheersEmpty">
+                        <div class="empty-emoji">💜</div>
+                        <p>还没有应援语</p>
+                        <p style="font-size:12px;">粉丝们正在赶来为你应援的路上~</p>
+                    </div>
+                    <div style="height:16px;"></div>
+                </div>
+                <div class="tab-bar">
+                    <div class="tab-item" data-page="homePage">
+                        <span class="tab-icon">🏠</span> 主页
+                    </div>
+                    <div class="tab-item" data-page="messagesPage" id="tabMessages4">
+                        <span class="tab-icon">💬</span> 消息
+                        <span class="tab-badge" id="msgBadge4" style="display:none;">0</span>
+                    </div>
+                    <div class="tab-item" data-page="postsPage">
+                        <span class="tab-icon">📝</span> 动态
+                    </div>
+                    <div class="tab-item active" data-page="cheersPage">
+                        <span class="tab-icon">💜</span> 应援
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 全局模态层 -->
+    <div id="modalContainer"></div>
+    <!-- Toast容器 -->
+    <div id="toastContainer"></div>
+
+    <script>
+        (function() {
+            // ============ 数据管理 ============
+            const STORAGE_KEY = 'idol_simulator_data_v2';
+            let appData = {
+                idol: null, // 偶像信息
+                stats: { fans: 12800, heat: 8500, posts: 0, msgs: 0 },
+                messages: [], // {id, senderName, senderEmoji, senderColor, content, time, read, type}
+                posts: [], // {id, content, time, likes, comments:[]}
+                cheers: [], // {id, fanName, text, time}
+                msgIdCounter: 0,
+                postIdCounter: 0,
+                cheerIdCounter: 0,
+                lastActiveTime: Date.now(),
+            };
+
+            // 粉丝名预设
+            const fanNamesPool = [
+                '小星', '爱唱歌的兔子', '星辰守护者', '暖暖', '追光者', '小太阳',
+                '月光', '甜心粉丝', '永远的站姐', '向日葵', '小迷妹', '守护天使',
+                '流星', '星光点点', '小确幸', '梦想家', '甜甜圈', '小铃铛',
+                '晨曦', '晚风', '小糖果', '北极星', '小羽毛', '彩虹糖',
+                '小星星一号', '永远的陪伴', '暖暖星光', '小粉丝一枚', '爱你的小可爱'
+            ];
+
+            const cheerTemplates = [
+                '{fanName}永远支持你！你是最棒的！💪',
+                '看到{stageName}的笑容，整个世界都亮了✨',
+                '{stageName}加油！{fanName}会一直陪着你！',
+                '每一天都在为{stageName}应援！💜',
+                '{stageName}就是我的光！永远闪耀吧🌟',
+                '从出道开始就喜欢你，{stageName}值得所有的爱！',
+                '{fanName}在这里大声说：{stageName}世界第一！🎉',
+                '无论多远，{fanName}都会支持{stageName}！',
+                '{stageName}的舞台永远是最闪耀的！🔥',
+                '加油{stageName}！{fanName}永远在你身后！💫',
+                '今天也为{stageName}疯狂心动！💗',
+                '{stageName}就是最美好的存在~{fanName}认证！',
+                '所有的掌声都属于{stageName}！👏',
+                '{fanName}带着满满的爱来应援啦！💝',
+                '{stageName}的每一天都值得被记录！📸',
+            ];
+
+            const fanMsgTemplates = [
+                '{stageName}姐姐，今天也要开心哦！☀️',
+                '新歌真的太好听了！循环了一整天🎵',
+                '{stageName}要注意身体，别太累了~',
+                '昨天梦到{stageName}了！醒来好幸福💗',
+                '永远支持你！{stageName}冲呀！',
+                '看到{stageName}的最新动态，心情变好了✨',
+                '{stageName}的舞台表现力真的太绝了！',
+                '好期待{stageName}的下一次演出！',
+                '{stageName}今天也超级美丽！',
+                '作为粉丝，真的很骄傲喜欢上{stageName}！',
+                '{stageName}的声音太治愈了~',
+                '每次看到{stageName}都充满了力量！',
+                '{stageName}就是我们的小太阳🌞',
+                '想告诉{stageName}，有很多人在爱着你！',
+                '今天也是为{stageName}心动的一天💓',
+            ];
+
+            const workMsgTemplates = [
+                '【工作邀约】综艺节目《星光大道》邀请您作为特邀嘉宾出席，录制时间下周三。',
+                '【广告代言】知名品牌想邀请您担任新一季代言人，详情请查看邮件。',
+                '【经纪人通知】下周行程已更新：周一拍摄、周三采访、周五粉丝见面会。',
+                '【合作邀请】著名音乐制作人想与您合作新单曲，机会难得！',
+                '【活动通知】年度偶像颁奖典礼将于下月举行，您已获得提名！',
+                '【杂志拍摄】《时尚偶像》杂志邀请您拍摄封面，档期已确认。',
+            ];
+
+            function getRandomItem(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+            function formatTime(ts) {
+                const d = new Date(ts);
+                const now = new Date();
+                const diff = now - d;
+                if (diff < 60000) return '刚刚';
+                if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前';
+                if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前';
+                if (diff < 172800000) return '昨天';
+                return d.getMonth() + 1 + '/' + d.getDate() + ' ' + d.getHours().toString().padStart(2, '0') + ':' + d
+                .getMinutes().toString().padStart(2, '0');
+            }
+
+            function formatNumber(n) {
+                if (n >= 10000) return (n / 1000).toFixed(1) + 'K';
+                if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+                return n.toString();
+            }
+
+            // ============ 持久化 ============
+            function saveData() {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+                } catch (e) {}
+            }
+
+            function loadData() {
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEY);
+                    if (raw) {
+                        const parsed = JSON.parse(raw);
+                        appData = { ...appData, ...parsed };
+                        return true;
+                    }
+                } catch (e) {}
+                return false;
+            }
+
+            // ============ 模拟数据生成 ============
+            function generateFanMessage() {
+                if (!appData.idol) return null;
+                const template = getRandomItem(fanMsgTemplates);
+                const content = template.replace('{stageName}', appData.idol.stageName);
+                const fanName = getRandomItem(fanNamesPool);
+                const colors = ['#FF6B6B', '#FF9F43', '#54A0FF', '#5F27CD', '#01A3A4', '#F368E0', '#FF6348',
+                '#7BED9F'];
+                return {
+                    id: ++appData.msgIdCounter,
+                    senderName: fanName,
+                    senderEmoji: ['😊', '🥰', '😍', '💜', '✨', '🌟', '💝', '🎀'][Math.floor(Math.random() * 8)],
+                    senderColor: getRandomItem(colors),
+                    content: content,
+                    time: Date.now() - Math.floor(Math.random() * 3600000),
+                    read: false,
+                    type: 'fan',
+                };
+            }
+
+            function generateWorkMessage() {
+                if (!appData.idol) return null;
+                const content = getRandomItem(workMsgTemplates);
+                return {
+                    id: ++appData.msgIdCounter,
+                    senderName: '经纪人 · 陈姐',
+                    senderEmoji: '💼',
+                    senderColor: '#5F27CD',
+                    content: content,
+                    time: Date.now() - Math.floor(Math.random() * 7200000),
+                    read: false,
+                    type: 'work',
+                };
+            }
+
+            function generateCheer() {
+                if (!appData.idol) return null;
+                const template = getRandomItem(cheerTemplates);
+                const fanName = getRandomItem(fanNamesPool);
+                const text = template.replace('{fanName}', fanName).replace('{stageName}', appData.idol.stageName);
+                return {
+                    id: ++appData.cheerIdCounter,
+                    fanName: fanName,
+                    text: text,
+                    time: Date.now() - Math.floor(Math.random() * 86400000),
+                };
+            }
+
+            function generateComment() {
+                if (!appData.idol) return '加油！支持你！💜';
+                const fanName = getRandomItem(fanNamesPool);
+                const comments = [
+                    fanName + '永远支持' + appData.idol.stageName + '！💜',
+                    '太棒了！' + appData.idol.stageName + '最棒！✨',
+                    fanName + '来报到！为' + appData.idol.stageName + '打call！',
+                    '好喜欢这条动态~💗',
+                    appData.idol.stageName + '加油！我们都在！',
+                ];
+                return getRandomItem(comments);
+            }
+
+            // ============ 自动生成逻辑 ============
+            function autoGenerateContent() {
+                if (!appData.idol) return;
+                const now = Date.now();
+                const elapsed = now - (appData.lastActiveTime || now);
+                // 每30秒离线时间生成一些内容
+                const cycles = Math.floor(elapsed / 30000);
+                if (cycles > 0) {
+                    const genMsgs = Math.min(cycles, 5);
+                    const genCheers = Math.min(cycles, 4);
+                    for (let i = 0; i < genMsgs; i++) {
+                        const msg = Math.random() < 0.3 ? generateWorkMessage() : generateFanMessage();
+                        if (msg) appData.messages.unshift(msg);
+                    }
+                    for (let i = 0; i < genCheers; i++) {
+                        const cheer = generateCheer();
+                        if (cheer) appData.cheers.unshift(cheer);
+                    }
+                    // 粉丝自然增长
+                    const growth = Math.floor(Math.random() * cycles * 50) + cycles * 20;
+                    appData.stats.fans += growth;
+                    appData.stats.heat += Math.floor(growth * 0.7);
+                }
+                appData.lastActiveTime = now;
+                updateStats();
+                saveData();
+            }
+
+            function updateStats() {
+                appData.stats.posts = appData.posts.length;
+                appData.stats.msgs = appData.messages.length;
+            }
+
+            // ============ UI渲染 ============
+            function getGradient(colorHex) {
+                return `linear-gradient(135deg, ${colorHex}, ${colorHex}dd)`;
+            }
+
+            function renderAll() {
+                if (!appData.idol) {
+                    showPage('createPage');
+                    document.getElementById('btnLoadIdol').style.display = loadData() && appData.idol ? 'block' :
+                        'none';
+                    updateCreatePageUI();
+                    return;
+                }
+                autoGenerateContent();
+                renderHomePage();
+                renderMessagesPage();
+                renderPostsPage();
+                renderCheersPage();
+                updateAllBadges();
+                showPage('homePage');
+                updateCreatePageUI();
+            }
+
+            function renderHomePage() {
+                const idol = appData.idol;
+                if (!idol) return;
+                // 偶像卡片
+                const avatarEl = document.getElementById('idolAvatarHome');
+                avatarEl.textContent = idol.stageName.charAt(0).toUpperCase();
+                avatarEl.style.background = getGradient(idol.representColor || '#AF52DE');
+                document.getElementById('idolStageNameHome').textContent = idol.stageName;
+                document.getElementById('idolRealNameHome').textContent = idol.realName + ' · ' + idol.age + '岁 · ' +
+                    idol.gender;
+                // 标签
+                const tagsContainer = document.getElementById('idolTagsHome');
+                tagsContainer.innerHTML = '';
+                const allTags = [idol.type, ...(idol.style || [])];
+                allTags.forEach(t => {
+                    const span = document.createElement('span');
+                    span.className = 'tag';
+                    if (t === '可爱' || t === '性感') span.classList.add('pink');
+                    if (t === '优雅' || t === '梦幻') span.classList.add('purple');
+                    if (t === '酷炫' || t === '复古') span.classList.add('blue');
+                    if (t === '元气' || t === '阳光') span.classList.add('orange');
+                    span.textContent = t;
+                    tagsContainer.appendChild(span);
+                });
+                document.getElementById('idolBioHome').textContent = (idol.backstory || '').substring(0, 80) + '...';
+                // 统计
+                document.getElementById('statFans').textContent = formatNumber(appData.stats.fans);
+                document.getElementById('statHeat').textContent = formatNumber(appData.stats.heat);
+                document.getElementById('statPosts').textContent = appData.posts.length;
+                document.getElementById('statMsgs').textContent = appData.messages.length;
+                // 最新动态
+                const latestPostEl = document.getElementById('latestPostPreview');
+                if (appData.posts.length > 0) {
+                    const lp = appData.posts[appData.posts.length - 1];
+                    latestPostEl.innerHTML = `
+                <div class="post-card" style="margin:6px 16px;padding:12px;">
+                  <div style="font-size:13px;color:var(--ios-text);">${lp.content.substring(0,60)}${lp.content.length>60?'...':''}</div>
+                  <div style="font-size:11px;color:#c7c7cc;margin-top:4px;">${formatTime(lp.time)} · ${lp.likes} 赞 · ${lp.comments.length} 评论</div>
+                </div>`;
+                } else {
+                    latestPostEl.innerHTML =
+                        '<div class="empty-state" style="padding:16px;"><p style="font-size:12px;">还没有动态，去发布第一条吧~</p></div>';
+                }
+                // 最新应援
+                const latestCheerEl = document.getElementById('latestCheerPreview');
+                if (appData.cheers.length > 0) {
+                    const lc = appData.cheers[appData.cheers.length - 1];
+                    latestCheerEl.innerHTML = `
+                <div class="cheer-card" style="margin:6px 16px;">
+                  <div class="cheer-fan-name">${lc.fanName} 应援说：</div>
+                  <div class="cheer-text">${lc.text}</div>
+                  <div class="cheer-time">${formatTime(lc.time)}</div>
+                </div>`;
+                } else {
+                    latestCheerEl.innerHTML =
+                        '<div class="empty-state" style="padding:16px;"><p style="font-size:12px;">粉丝们正在赶来~</p></div>';
+                }
+            }
+
+            function renderMessagesPage() {
+                const listEl = document.getElementById('messagesList');
+                const emptyEl = document.getElementById('messagesEmpty');
+                if (appData.messages.length === 0) {
+                    listEl.innerHTML = '';
+                    emptyEl.style.display = 'block';
+                } else {
+                    emptyEl.style.display = 'none';
+                    listEl.innerHTML = appData.messages.slice(0, 50).map(m => `
+                <div class="bubble-row" data-msg-id="${m.id}" onclick="window._openMessageDetail(${m.id})">
+                  <div class="bubble-avatar" style="background:${getGradient(m.senderColor)};">${m.senderEmoji}</div>
+                  <div class="bubble-content">
+                    <div class="bubble-name">${m.senderName}${m.type==='work'?' · 工作':''}</div>
+                    <div class="bubble-preview">${m.content.substring(0,35)}${m.content.length>35?'...':''}</div>
+                  </div>
+                  <span class="bubble-time">${formatTime(m.time)}</span>
+                  ${!m.read ? '<span class="unread-dot"></span>' : ''}
+                </div>
+              `).join('');
+                }
+            }
+
+            function renderPostsPage() {
+                const listEl = document.getElementById('postsList');
+                const emptyEl = document.getElementById('postsEmpty');
+                if (appData.posts.length === 0) {
+                    listEl.innerHTML = '';
+                    emptyEl.style.display = 'block';
+                } else {
+                    emptyEl.style.display = 'none';
+                    listEl.innerHTML = [...appData.posts].reverse().map(p => `
+                <div class="post-card">
+                  <div class="post-header">
+                    <div class="post-avatar" style="background:${getGradient(appData.idol?.representColor||'#AF52DE')};">${(appData.idol?.stageName||'I').charAt(0).toUpperCase()}</div>
+                    <div>
+                      <div class="post-name">${appData.idol?.stageName||'偶像'}</div>
+                      <div class="post-time">${formatTime(p.time)}</div>
+                    </div>
+                  </div>
+                  <div class="post-body">${p.content}</div>
+                  <div class="post-actions">
+                    <span onclick="window._likePost(${p.id})">❤️ ${p.likes}</span>
+                    <span>💬 ${p.comments.length}</span>
+                  </div>
+                  ${p.comments.length > 0 ? `
+                  <div class="comment-preview">
+                    ${p.comments.slice(-2).map(c=>`<div style="margin:2px 0;">💜 <strong>${c.fanName||'粉丝'}:</strong> ${c.text}</div>`).join('')}
+                  </div>` : ''}
+                </div>
+              `).join('');
+                }
+            }
+
+            function renderCheersPage() {
+                const listEl = document.getElementById('cheersList');
+                const emptyEl = document.getElementById('cheersEmpty');
+                if (appData.cheers.length === 0) {
+                    listEl.innerHTML = '';
+                    emptyEl.style.display = 'block';
+                } else {
+                    emptyEl.style.display = 'none';
+                    listEl.innerHTML = [...appData.cheers].reverse().slice(0, 40).map(c => `
+                <div class="cheer-card pop-in">
+                  <div class="cheer-fan-name">💜 ${c.fanName} 应援说：</div>
+                  <div class="cheer-text">${c.text}</div>
+                  <div class="cheer-time">${formatTime(c.time)}</div>
+                </div>
+              `).join('');
+                }
+            }
+
+            function updateAllBadges() {
+                const unread = appData.messages.filter(m => !m.read).length;
+                const badges = ['msgBadge', 'msgBadge2', 'msgBadge3', 'msgBadge4'];
+                badges.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        if (unread > 0) {
+                            el.style.display = 'flex';
+                            el.textContent = unread > 99 ? '99+' : unread;
+                            if (unread > 0 && !el.classList.contains('pulse-added')) {
+                                el.classList.add('pulse');
+                                el.classList.add('pulse-added');
+                                setTimeout(() => { el.classList.remove('pulse');
+                                    el.classList.remove('pulse-added'); }, 2000);
+                            }
+                        } else {
+                            el.style.display = 'none';
+                        }
+                    }
+                });
+            }
+
+            function showPage(pageId) {
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                const page = document.getElementById(pageId);
+                if (page) page.classList.add('active');
+                // 更新tab状态
+                document.querySelectorAll('.tab-item').forEach(t => {
+                    t.classList.toggle('active', t.dataset.page === pageId);
+                });
+                // 刷新页面内容
+                if (pageId === 'homePage') renderHomePage();
+                if (pageId === 'messagesPage') renderMessagesPage();
+                if (pageId === 'postsPage') renderPostsPage();
+                if (pageId === 'cheersPage') renderCheersPage();
+                updateAllBadges();
+                updateStatusTime();
+            }
+
+            function updateStatusTime() {
+                const now = new Date();
+                document.getElementById('statusTime').textContent =
+                    now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+            }
+
+            function updateCreatePageUI() {
+                const btnLoad = document.getElementById('btnLoadIdol');
+                if (btnLoad) {
+                    const hasSaved = localStorage.getItem(STORAGE_KEY);
+                    btnLoad.style.display = (hasSaved && !appData.idol) ? 'block' : 'none';
+                }
+            }
+
+            // ============ Toast ============
+            function showToast(msg) {
+                const container = document.getElementById('toastContainer');
+                const toast = document.createElement('div');
+                toast.className = 'toast';
+                toast.textContent = msg;
+                container.appendChild(toast);
+                setTimeout(() => { toast.remove(); }, 2000);
+            }
+
+            // ============ 模态弹窗 ============
+            function openModal(title, contentHTML, extraClass = '') {
+                const container = document.getElementById('modalContainer');
+                container.innerHTML = `
+              <div class="modal-overlay" id="currentModal" onclick="if(event.target===this)window._closeModal()">
+                <div class="modal-sheet ${extraClass}">
+                  <div class="modal-handle"></div>
+                  <div class="modal-title">${title}</div>
+                  ${contentHTML}
+                </div>
+              </div>`;
+                document.body.style.overflow = 'hidden';
+            }
+
+            window._closeModal = function() {
+                document.getElementById('modalContainer').innerHTML = '';
+                document.body.style.overflow = '';
+            };
+
+            window._openMessageDetail = function(msgId) {
+                const msg = appData.messages.find(m => m.id === msgId);
+                if (!msg) return;
+                msg.read = true;
+                saveData();
+                updateAllBadges();
+                renderMessagesPage();
+                const contentHTML = `
+              <div class="msg-detail">
+                <div class="msg-sender">${msg.senderEmoji} ${msg.senderName}${msg.type==='work'?' · 工作消息':''}</div>
+                <div class="msg-timestamp">${formatTime(msg.time)}</div>
+                <div class="msg-body">${msg.content}</div>
+                <button class="btn-outline" style="width:auto;margin:16px auto;display:block;padding:10px 30px;" onclick="window._closeModal()">关闭</button>
+              </div>`;
+                openModal('消息详情', contentHTML);
+            };
+
+            window._likePost = function(postId) {
+                const post = appData.posts.find(p => p.id === postId);
+                if (post) {
+                    post.likes++;
+                    appData.stats.heat += 10;
+                    saveData();
+                    renderPostsPage();
+                    renderHomePage();
+                    showToast('❤️ 点赞成功！');
+                }
+            };
+
+            // ============ 创建偶像 ============
+            function setupStyleTags() {
+                const tags = document.querySelectorAll('#styleTags .selectable');
+                const input = document.getElementById('inputStyle');
+                const selectedStyles = new Set(appData.idol?.style || []);
+
+                function updateStyles() {
+                    const vals = [];
+                    tags.forEach(t => {
+                        if (t.dataset.selected === 'true') vals.push(t.dataset.val);
+                    });
+                    input.value = vals.join(',');
+                }
+
+                tags.forEach(tag => {
+                    if (selectedStyles.has(tag.dataset.val)) {
+                        tag.dataset.selected = 'true';
+                        tag.style.outline = '2px solid var(--ios-blue)';
+                        tag.style.outlineOffset = '2px';
+                    }
+                    tag.addEventListener('click', function() {
+                        if (this.dataset.selected === 'true') {
+                            this.dataset.selected = 'false';
+                            this.style.outline = 'none';
+                            this.style.outlineOffset = '0';
+                        } else {
+                            this.dataset.selected = 'true';
+                            this.style.outline = '2px solid var(--ios-blue)';
+                            this.style.outlineOffset = '2px';
+                        }
+                        updateStyles();
+                    });
+                });
+                updateStyles();
+            }
+
+            document.getElementById('btnCreateIdol').addEventListener('click', function() {
+                const realName = document.getElementById('inputRealName').value.trim();
+                const stageName = document.getElementById('inputStageName').value.trim();
+                const age = parseInt(document.getElementById('inputAge').value) || 20;
+                const gender = document.getElementById('inputGender').value;
+                const type = document.getElementById('inputType').value;
+                const styleRaw = document.getElementById('inputStyle').value;
+                const talent = document.getElementById('inputTalent').value.trim();
+                const fanName = document.getElementById('inputFanName').value.trim();
+                const representColor = document.getElementById('inputColor').value;
+                const debutDate = document.getElementById('inputDebutDate').value;
+                const backstory = document.getElementById('inputBackstory').value.trim();
+                const appearance = document.getElementById('inputAppearance').value.trim();
+                const personality = document.getElementById('inputPersonality').value.trim();
+
+                if (!realName || !stageName) {
+                    showToast('⚠️ 请至少填写真实姓名和艺名');
+                    return;
+                }
+                if (!fanName) {
+                    showToast('⚠️ 请给你的粉丝起个名字吧~');
+                    return;
+                }
+
+                const style = styleRaw ? styleRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+
+                appData.idol = {
+                    realName,
+                    stageName,
+                    age,
+                    gender,
+                    type,
+                    style,
+                    talent,
+                    fanName,
+                    representColor,
+                    debutDate,
+                    backstory,
+                    appearance,
+                    personality,
+                    createdAt: Date.now(),
+                };
+
+                // 初始欢迎消息
+                appData.messages = [{
+                    id: ++appData.msgIdCounter,
+                    senderName: '系统助手',
+                    senderEmoji: '🎉',
+                    senderColor: '#FF6B6B',
+                    content: '欢迎来到偶像的世界！' + stageName + '，从今天开始，你将开启闪耀的星途！粉丝们都在期待着你的精彩表现~💜',
+                    time: Date.now(),
+                    read: false,
+                    type: 'system',
+                }, {
+                    id: ++appData.msgIdCounter,
+                    senderName: '经纪人 · 陈姐',
+                    senderEmoji: '💼',
+                    senderColor: '#5F27CD',
+                    content: '恭喜' + stageName + '正式出道！我已经为你安排了一些初步的行程，请查看并做好准备。未来一起加油！',
+                    time: Date.now() - 60000,
+                    read: false,
+                    type: 'work',
+                }];
+
+                // 初始应援
+                appData.cheers = [{
+                    id: ++appData.cheerIdCounter,
+                    fanName: fanName + '代表',
+                    text: '欢迎' + stageName + '出道！从今天起，' + fanName + '们会一直守护你！💜✨',
+                    time: Date.now(),
+                }, {
+                    id: ++appData.cheerIdCounter,
+                    fanName: '小' + fanName.charAt(0),
+                    text: stageName + '加油！世界因你而闪耀！🌟',
+                    time: Date.now() - 30000,
+                }];
+
+                appData.stats.fans = 1280;
+                appData.stats.heat = 850;
+                appData.posts = [];
+                appData.lastActiveTime = Date.now();
+                updateStats();
+                saveData();
+                showToast('✨ 偶像 ' + stageName + ' 创建成功！');
+                renderAll();
+            });
+
+            document.getElementById('btnLoadIdol').addEventListener('click', function() {
+                if (loadData() && appData.idol) {
+                    showToast('📂 已加载偶像：' + appData.idol.stageName);
+                    renderAll();
+                } else {
+                    showToast('⚠️ 没有找到已保存的数据');
+                }
+            });
+
+            document.getElementById('btnEditIdol').addEventListener('click', function() {
+                if (!appData.idol) return;
+                // 回填数据并跳转到创建页
+                document.getElementById('inputRealName').value = appData.idol.realName;
+                document.getElementById('inputStageName').value = appData.idol.stageName;
+                document.getElementById('inputAge').value = appData.idol.age;
+                document.getElementById('inputGender').value = appData.idol.gender;
+                document.getElementById('inputType').value = appData.idol.type;
+                document.getElementById('inputStyle').value = (appData.idol.style || []).join(',');
+                document.getElementById('inputTalent').value = appData.idol.talent || '';
+                document.getElementById('inputFanName').value = appData.idol.fanName || '';
+                document.getElementById('inputColor').value = appData.idol.representColor || '#AF52DE';
+                document.getElementById('inputDebutDate').value = appData.idol.debutDate || '';
+                document.getElementById('inputBackstory').value = appData.idol.backstory || '';
+                document.getElementById('inputAppearance').value = appData.idol.appearance || '';
+                document.getElementById('inputPersonality').value = appData.idol.personality || '';
+                // 更新风格标签
+                const selectedStyles = new Set(appData.idol.style || []);
+                document.querySelectorAll('#styleTags .selectable').forEach(tag => {
+                    if (selectedStyles.has(tag.dataset.val)) {
+                        tag.dataset.selected = 'true';
+                        tag.style.outline = '2px solid var(--ios-blue)';
+                        tag.style.outlineOffset = '2px';
+                    } else {
+                        tag.dataset.selected = 'false';
+                        tag.style.outline = 'none';
+                        tag.style.outlineOffset = '0';
+                    }
+                });
+                showPage('createPage');
+                document.getElementById('createScroll').scrollTop = 0;
+                showToast('📝 可以修改偶像信息后重新保存');
+            });
+
+            // ============ 发布动态 ============
+            document.getElementById('btnNewPost').addEventListener('click', function() {
+                if (!appData.idol) {
+                    showToast('⚠️ 请先创建偶像');
+                    return;
+                }
+                const contentHTML = `
+              <div style="padding:16px;">
+                <textarea id="newPostContent" class="form-textarea" placeholder="分享你的动态...&#10;和粉丝们说点什么吧~" maxlength="280" style="min-height:100px;"></textarea>
+                <button class="btn-primary" id="btnSubmitPost" style="margin-top:12px;">发布动态 📝</button>
+              </div>`;
+                openModal('发布新动态', contentHTML);
+                setTimeout(() => {
+                    const btnSubmit = document.getElementById('btnSubmitPost');
+                    const textarea = document.getElementById('newPostContent');
+                    if (btnSubmit && textarea) {
+                        btnSubmit.addEventListener('click', function() {
+                            const content = textarea.value.trim();
+                            if (!content) {
+                                showToast('⚠️ 请输入动态内容');
+                                return;
+                            }
+                            const post = {
+                                id: ++appData.postIdCounter,
+                                content: content,
+                                time: Date.now(),
+                                likes: Math.floor(Math.random() * 30),
+                                comments: [],
+                            };
+                            // 自动生成一些粉丝评论
+                            const numComments = Math.floor(Math.random() * 3) + 1;
+                            for (let i = 0; i < numComments; i++) {
+                                post.comments.push({
+                                    fanName: getRandomItem(fanNamesPool),
+                                    text: generateComment(),
+                                    time: Date.now() + i * 60000,
+                                });
+                            }
+                            appData.posts.push(post);
+                            appData.stats.heat += 100 + Math.floor(Math.random() * 200);
+                            appData.stats.fans += Math.floor(Math.random() * 30) + 5;
+                            updateStats();
+                            saveData();
+                            window._closeModal();
+                            renderPostsPage();
+                            renderHomePage();
+                            showToast('📝 动态发布成功！');
+                        });
+                    }
+                }, 300);
+            });
+
+            // ============ 全部已读 ============
+            document.getElementById('btnMarkAllRead').addEventListener('click', function() {
+                appData.messages.forEach(m => m.read = true);
+                saveData();
+                updateAllBadges();
+                renderMessagesPage();
+                showToast('✅ 所有消息已标记为已读');
+            });
+
+            // ============ Tab切换 ============
+            document.querySelectorAll('.tab-item').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const pageId = this.dataset.page;
+                    if (pageId === 'createPage') return;
+                    if (!appData.idol && pageId !== 'createPage') {
+                        showToast('⚠️ 请先创建偶像');
+                        showPage('createPage');
+                        return;
+                    }
+                    showPage(pageId);
+                });
+            });
+
+            // ============ 定时生成 ============
+            let autoGenInterval = null;
+
+            function startAutoGen() {
+                if (autoGenInterval) clearInterval(autoGenInterval);
+                autoGenInterval = setInterval(() => {
+                    if (!appData.idol) return;
+                    if (Math.random() < 0.5) {
+                        const msg = Math.random() < 0.25 ? generateWorkMessage() : generateFanMessage();
+                        if (msg) {
+                            appData.messages.unshift(msg);
+                            updateStats();
+                            saveData();
+                            updateAllBadges();
+                            if (document.getElementById('messagesPage').classList.contains('active')) {
+                                renderMessagesPage();
+                            }
+                        }
+                    }
+                    if (Math.random() < 0.4) {
+                        const cheer = generateCheer();
+                        if (cheer) {
+                            appData.cheers.unshift(cheer);
+                            saveData();
+                            if (document.getElementById('cheersPage').classList.contains('active')) {
+                                renderCheersPage();
+                            }
+                        }
+                    }
+                    // 粉丝自然增长
+                    if (Math.random() < 0.3) {
+                        appData.stats.fans += Math.floor(Math.random() * 15) + 3;
+                        appData.stats.heat += Math.floor(Math.random() * 10) + 2;
+                        saveData();
+                        if (document.getElementById('homePage').classList.contains('active')) {
+                            renderHomePage();
+                        }
+                    }
+                }, 15000 + Math.random() * 20000); // 15-35秒随机
+            }
+
+            // ============ 初始化 ============
+            function init() {
+                setupStyleTags();
+                updateStatusTime();
+                setInterval(updateStatusTime, 30000);
+
+                const hasData = loadData();
+                if (hasData && appData.idol) {
+                    updateCreatePageUI();
+                    renderAll();
+                    showPage('homePage');
+                } else {
+                    showPage('createPage');
+                    updateCreatePageUI();
+                }
+                startAutoGen();
+                updateAllBadges();
+            }
+
+            // 暴露到全局
+            window._openMessageDetail = window._openMessageDetail;
+            window._likePost = window._likePost;
+            window._closeModal = window._closeModal;
+
+            init();
+            console.log('🌟 偶像模拟器已就绪！');
+            console.log('   - 创建你的专属偶像');
+            console.log('   - 接收粉丝消息和工作邀约');
+            console.log('   - 发布动态与粉丝互动');
+            console.log('   - 查看粉丝应援墙');
+            console.log('   💜 祝你星途闪耀！');
+        })();
+    </script>
+</body>
+</html>
